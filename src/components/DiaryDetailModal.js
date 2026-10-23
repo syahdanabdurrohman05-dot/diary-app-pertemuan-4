@@ -4,23 +4,29 @@ import { COLORS, SPACE, RADIUS, TYPO } from '../styles/tokens';
 
 export default function DiaryDetailModal({ visible, onClose, entry }) {
   if (!entry) return null;
-  const { title, date, body, preview, heroUri, moodUri, imageSource } = entry;
 
-  // Prioritas gambar: heroUri -> imageSource -> moodUri
-  const resolvedHero = heroUri ? { uri: heroUri } : (imageSource || { uri: moodUri });
+  const { title, date, body, preview, moodImage } = entry;
 
   return (
-    <Modal visible={visible} animationType="slide">
+    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <View style={styles.container}>
-        <Image
-          source={typeof resolvedHero === 'string' ? { uri: resolvedHero } : resolvedHero}
-          style={styles.hero}
-        />
+        {moodImage && (
+          <Image
+            source={moodImage}
+            style={styles.hero}
+            resizeMode="cover"
+          />
+        )}
         <View style={styles.content}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.date}>{date}</Text>
           <Text style={styles.body}>{body || preview}</Text>
-          <Pressable onPress={onClose} style={styles.button}>
+          <Pressable
+            onPress={onClose}
+            style={styles.button}
+            accessible
+            accessibilityLabel="Tutup detail buku harian"
+          >
             <Text style={styles.buttonText}>Tutup</Text>
           </Pressable>
         </View>
@@ -36,8 +42,8 @@ const styles = StyleSheet.create({
   },
   hero: {
     width: '100%',
-    aspectRatio: 16 / 9,
-    backgroundColor: '#ddd',
+    height: 220,
+    backgroundColor: '#DDD',
     borderBottomLeftRadius: RADIUS.card,
     borderBottomRightRadius: RADIUS.card,
   },
@@ -46,7 +52,7 @@ const styles = StyleSheet.create({
     gap: SPACE.s,
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: COLORS.text,
   },
@@ -58,7 +64,7 @@ const styles = StyleSheet.create({
   body: {
     fontSize: TYPO.body,
     color: COLORS.text,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   button: {
     marginTop: SPACE.l,
@@ -68,7 +74,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFF',
     fontWeight: '700',
   },
 });

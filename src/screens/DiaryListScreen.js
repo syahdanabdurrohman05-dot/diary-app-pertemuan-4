@@ -1,98 +1,99 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { COLORS, SPACE, TYPO } from '../styles/tokens';
 import DiaryCard from '../components/DiaryCard';
 import DiaryDetailModal from '../components/DiaryDetailModal';
-import { COLORS, SPACE, TYPO, BREAKPOINTS } from '../styles/tokens';
+import SearchBar from '../components/SearchBar';
+import EntryForm from '../components/EntryForm';
 
-const DATA = [
+const INITIAL_ENTRIES = [
   {
     id: 1,
     title: 'Pagi yang Tenang',
-    date: '2025-10-06',
-    preview: 'Hari ini aku bangun lebih pagi dan berjalan kaki 20 menit...',
-    body: 'Hari ini aku bangun lebih pagi dan berjalan kaki 20 menit. Udara terasa sejuk dan suasana sangat damai untuk memulai aktivitas hari ini.',
-    imageSource: require('../../assets/moods/kei.jpeg'),
-    heroUri: 'https://picsum.photos/seed/happyhero/800/450',
+    date: '2026-10-18',
+    preview: 'Jalan pagi 20 menit dan menikmati udara segar.',
+    body: 'Hari ini aku bangun lebih pagi dan berjalan kaki selama 20 menit.',
+    moodImage: require('../../assets/moods/carlotta.jpeg'),
   },
   {
     id: 2,
     title: 'Produktif di Kampus',
-    date: '2025-10-05',
-    preview: 'Menyelesaikan modul praktikum dan berdiskusi dengan tim...',
-    body: 'Menyelesaikan modul praktikum dan berdiskusi bersama tim mengenai desain UI. Banyak wawasan baru tentang Flexbox dan layout responsif.',
-    moodUri: 'https://picsum.photos/seed/focus/200',
-    heroUri: 'https://picsum.photos/seed/focushero/800/450',
+    date: '2026-10-17',
+    preview: 'Menyelesaikan modul praktikum dan berdiskusi dengan tim.',
+    body: 'Hari ini cukup produktif karena beberapa target perkuliahan selesai.',
+    moodImage: require('../../assets/moods/focus.jpeg'),
   },
   {
     id: 3,
     title: 'Senja di Taman',
-    date: '2025-10-04',
-    preview: 'Menikmati senja sambil membaca buku favorit...',
-    body: 'Menikmati senja sambil membaca buku favorit di bangku taman kota. Warna langit senja jingga keemasan sangat menenangkan pikiran.',
-    moodUri: 'https://picsum.photos/seed/calm/200',
-    heroUri: 'https://picsum.photos/seed/calmhero/800/450',
-  },
-  {
-    id: 4,
-    title: 'Ngopi Sore',
-    date: '2025-10-03',
-    preview: 'Duduk santai di kedai kopi sambil menulis rencana minggu depan...',
-    body: 'Duduk santai di kedai kopi langganan sambil menulis rencana kegiatan minggu depan. Kopi hangat membuat pikiran lebih fokus dan terarah.',
-    moodUri: 'https://picsum.photos/seed/coffee/200',
-    heroUri: 'https://picsum.photos/seed/coffeehero/800/450',
-  },
-  {
-    id: 5,
-    title: 'Olahraga Pagi',
-    date: '2025-10-02',
-    preview: 'Jogging keliling kompleks perumahan agar tubuh tetap bugar...',
-    body: 'Jogging keliling kompleks perumahan sebanyak tiga putaran agar tubuh tetap bugar dan siap menghadapi perkuliahan sepanjang hari.',
-    moodUri: 'https://picsum.photos/seed/run/200',
-    heroUri: 'https://picsum.photos/seed/runhero/800/450',
+    date: '2026-10-16',
+    preview: 'Membaca buku sambil menikmati suasana senja.',
+    body: 'Sore ini saya menikmati waktu di taman sambil membaca buku.',
+    moodImage: require('../../assets/moods/kei.jpeg'),
   },
 ];
-
 export default function DiaryListScreen() {
-  const { width } = useWindowDimensions();
-  const twoCols = width >= BREAKPOINTS.tablet;
+  // STATE UTAMA
+  const [entries, setEntries] = useState(INITIAL_ENTRIES);
+  const [query, setQuery] = useState('');
+  const [likedIds, setLikedIds] = useState(new Set());
   const [selected, setSelected] = useState(null);
 
-  // Kunci unik FlatList agar otomatis re-render saat orientasi/kolom berubah
-  const keyForCols = useMemo(() => (twoCols ? 'grid2' : 'list1'), [twoCols]);
+  // DERIVED STATE
+  const filtered = useMemo(() => {
+    if (!query.trim()) return entries;
+    const q = query.toLowerCase();
+    return entries.filter(
+      (entry) =>
+        entry.title.toLowerCase().includes(q) ||
+        entry.preview.toLowerCase().includes(q) ||
+        entry.date.toLowerCase().includes(q)
+    );
+  }, [entries, query]);
+
+  const toggleLike = (id) => {
+    setLikedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const addEntry = (newEntry) => {
+    setEntries((prev) => [newEntry, ...prev]);
+  };
 
   const renderItem = ({ item }) => (
-    <View style={[styles.itemWrap, twoCols && styles.itemWrap2]}>
-      <DiaryCard
-        title={item.title}
-        date={item.date}
-        preview={item.preview}
-        imageSource={item.imageSource}
-        moodUri={item.moodUri}
-        variant={twoCols ? 'grid' : 'list'}
-        onPress={() => setSelected(item)}
-      />
-    </View>
+    <DiaryCard
+      title={item.title}
+      date={item.date}
+      preview={item.preview}
+      moodImage={item.moodImage}
+      liked={likedIds.has(item.id)}
+      onToggleLike={() => toggleLike(item.id)}
+      onPress={() => setSelected(item)}
+    />
   );
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Buku Harian</Text>
+      <SearchBar onChange={setQuery} />
+      <EntryForm onSubmit={addEntry} />
       <FlatList
-        key={keyForCols}
-        data={DATA}
-        numColumns={twoCols ? 2 : 1}
-        keyExtractor={(it) => String(it.id)}
+        data={filtered}
+        keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
-        columnWrapperStyle={twoCols ? { gap: SPACE.m } : undefined}
-        contentContainerStyle={{
-          padding: SPACE.l,
-          gap: SPACE.m,
-          paddingTop: SPACE.m,
-        }}
-        ListEmptyComponent={<Text style={styles.empty}>Belum ada entri.</Text>}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <Text style={styles.empty}>Belum ada entri.</Text>
+        }
       />
 
-      {/* Modal Detail */}
       <DiaryDetailModal
         visible={!!selected}
         entry={selected}
@@ -114,11 +115,10 @@ const styles = StyleSheet.create({
     paddingTop: SPACE.l,
     color: COLORS.text,
   },
-  itemWrap: {
-    flex: 1,
-  },
-  itemWrap2: {
-    flex: 1 / 2,
+  listContent: {
+    padding: SPACE.l,
+    gap: SPACE.m,
+    paddingTop: SPACE.m,
   },
   empty: {
     textAlign: 'center',
